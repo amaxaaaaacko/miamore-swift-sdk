@@ -2,24 +2,30 @@ import Foundation
 
 @MainActor
 public enum MiaMoreSDK {
-  public static let version = "0.1.0"
+  public static let version = "0.1.2"
 
   public struct Configuration: Sendable {
     public let baseURL: URL
     public let bundleId: String
     public let apiKey: String
     public let customerUserId: String
+    public let environment: MiaMoreEnvironment
+    public let logLevel: MiaMoreLogLevel
 
     public init(
       baseURL: URL,
       bundleId: String,
       apiKey: String,
-      customerUserId: String
+      customerUserId: String,
+      environment: MiaMoreEnvironment,
+      logLevel: MiaMoreLogLevel
     ) {
       self.baseURL = baseURL
       self.bundleId = bundleId
       self.apiKey = apiKey
       self.customerUserId = customerUserId
+      self.environment = environment
+      self.logLevel = logLevel
     }
   }
 
@@ -33,18 +39,30 @@ public enum MiaMoreSDK {
   private static var config: Configuration?
 
   /// Configure SDK once at app launch.
+  ///
   /// - Parameters:
   ///   - baseURL: SDK config API base URL, e.g. https://appstore-sdk-...a.run.app
   ///   - bundleId: Your app bundle id (used as app key in backend), e.g. com.my.app
   ///   - apiKey: Per-app SDK API key (from AdminJS)
   ///   - customerUserId: AppsFlyer-generated user id, passed from app
+  ///   - environment: PROD / SANDBOX (default: PROD)
+  ///   - logLevel: debug/info/... (default: info)
   public static func configure(
     baseURL: URL,
     bundleId: String,
     apiKey: String,
-    customerUserId: String
+    customerUserId: String,
+    environment: MiaMoreEnvironment = .prod,
+    logLevel: MiaMoreLogLevel = .info
   ) {
-    config = Configuration(baseURL: baseURL, bundleId: bundleId, apiKey: apiKey, customerUserId: customerUserId)
+    config = Configuration(
+      baseURL: baseURL,
+      bundleId: bundleId,
+      apiKey: apiKey,
+      customerUserId: customerUserId,
+      environment: environment,
+      logLevel: logLevel
+    )
   }
 
   public static var configuration: Configuration? {
@@ -110,26 +128,20 @@ public enum MiaMoreSDK {
   public static func getPaywall(placement: String?, paywallId: String?, experimentId: String?) async throws -> PaywallResponse {
     guard let cfg = configuration else { throw SDKError.notConfigured }
 
-    var comps = URLComponents(url: cfg.baseURL, resolvingAgainstBaseURL: false)
-    if comps == nil {
-      comps = URLComponents(string: cfg.baseURL.absoluteString)
-    }
-    guard var urlc = comps else { throw SDKError.invalidBaseURL }
-
-    let basePath = urlc.path
-    let normalizedBasePath = basePath.hasSuffix("/") ? String(basePath.dropLast()) : basePath
-    urlc.path = normalizedBasePath + "/v1/sdk/paywall"
-
-    var q: [URLQueryItem] = [
-      URLQueryItem(name: "bundleId", value: cfg.bundleId),
-      URLQueryItem(name: "customerUserId", value: cfg.customerUserId),
-    ]
-    if let placement { q.append(URLQueryItem(name: "placement", value: placement)) }
-    if let paywallId { q.append(URLQueryItem(name: "paywallId", value: paywallId)) }
-    if let experimentId { q.append(URLQueryItem(name: "experimentId", value: experimentId)) }
-
-    urlc.queryItems = q
-    guard let url = urlc.url else { throw SDKError.invalidBaseURL }
+    let url = try MiaMoreHTTP.buildURL(
+      baseURL: cfg.baseURL,
+      path: "/v1/sdk/paywall",
+      query: [
+        URLQueryItem(name: "bundleId", value: cfg.bundleId),
+        URLQueryItem(name: "customerUserId", value: cfg.customerUserId),
+        URLQueryItem(name: "placement", value: placement),
+        URLQueryItem(name: "paywallId", value: paywallId),
+        URLQueryItem(name: "experimentId", value: experimentId),
+      ].compactMap { item in
+        guard let v = item.value, !v.isEmpty else { return nil }
+        return item
+      }
+    )
 
     var req = URLRequest(url: url)
     req.httpMethod = "GET"
