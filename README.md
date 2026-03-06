@@ -18,7 +18,7 @@ Internal SDK for Appstero apps (Swift/iOS). It fetches **paywalls + products**, 
 **Package.swift:**
 
 ```swift
-.package(url: "https://github.com/amaxaaaaacko/miamore-swift-sdk", from: "0.1.2"),
+.package(url: "https://github.com/amaxaaaaacko/miamore-swift-sdk", from: "0.1.3"),
 ```
 
 **Module / target name**

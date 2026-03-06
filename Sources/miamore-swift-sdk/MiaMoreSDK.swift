@@ -2,7 +2,7 @@ import Foundation
 
 @MainActor
 public enum MiaMoreSDK {
-  public static let version = "0.1.2"
+  public static let version = "0.1.3"
 
   public struct Configuration: Sendable {
     public let baseURL: URL
@@ -63,6 +63,9 @@ public enum MiaMoreSDK {
       environment: environment,
       logLevel: logLevel
     )
+
+    // Auto-track basic activity for refund-saver heuristics.
+    MiaMoreAppOpenAutoTracker.shared.startIfNeeded()
   }
 
   public static var configuration: Configuration? {
