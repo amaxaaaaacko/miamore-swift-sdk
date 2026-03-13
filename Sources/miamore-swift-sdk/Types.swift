@@ -16,8 +16,8 @@ public enum MiaMoreLogLevel: String, Codable, Sendable {
 public struct MiaMoreSubscriptionStatus: Codable, Sendable {
   public let isActive: Bool
   public let expiresAt: Date?
-  public let environment: MiaMoreEnvironment
-  public let originalTransactionId: String
+  public let environment: MiaMoreEnvironment?
+  public let originalTransactionId: String?
   public let productId: String?
   public let updatedAt: Date?
 

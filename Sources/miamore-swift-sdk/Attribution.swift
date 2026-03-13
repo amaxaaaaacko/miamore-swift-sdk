@@ -3,7 +3,10 @@ import Foundation
 extension MiaMoreSDK {
   /// Store AppsFlyer id (if you want it separately from customerUserId)
   public static func setIntegrationIdentifier(appsflyerId: String) async throws {
-    try await updateAttribution(appsflyerId: appsflyerId, payload: nil)
+    try await updateAttribution(
+      appsflyerId: appsflyerId,
+      payload: MiaMoreAttributionPayload(raw: [:])
+    )
   }
 
   /// Send attribution payload to MiaMore backend.
