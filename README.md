@@ -51,7 +51,7 @@ Call once at app launch (e.g. `AppDelegate` / `@main`):
 import Foundation
 import miamore_swift_sdk
 
-let baseURL = URL(string: "https://appstore-sdk-ztkt56mq6a-uc.a.run.app")!
+let baseURL = URL(string: "https://<your-sdk-service>")!
 
 await MainActor.run {
   MiaMoreSDK.configure(
@@ -68,7 +68,7 @@ await MainActor.run {
 ### Required parameters
 - `baseURL` – our SDK config Cloud Run URL
 - `bundleId` – app bundle id (must match `apps/{bundleId}`)
-- `apiKey` – per-app SDK API key (generated in AdminJS)
+- `apiKey` – per-app SDK API key (generated in AdminJS). **Do not hard-code or commit it.**
 - `customerUserId` – AppsFlyer-generated id (passed from app)
 
 ### Environment (PROD/SANDBOX)
@@ -195,7 +195,7 @@ import miamore_swift_sdk
 @MainActor
 func boot(customerUserId: String) async {
   MiaMoreSDK.configure(
-    baseURL: URL(string: "https://appstore-sdk-ztkt56mq6a-uc.a.run.app")!,
+    baseURL: URL(string: "https://<your-sdk-service>")!,
     bundleId: Bundle.main.bundleIdentifier!,
     apiKey: "<sdk_api_key>",
     customerUserId: customerUserId
