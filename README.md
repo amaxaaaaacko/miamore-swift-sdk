@@ -1,6 +1,6 @@
 # MiaMore Swift SDK
 
-Internal SDK for Appstero apps (Swift/iOS). It fetches **paywalls + products**, supports **purchases/restore** (StoreKit 2), and fetches **subscription status** from our backend.
+Internal Swift/iOS SDK. It fetches **paywalls + products**, supports **purchases/restore** (StoreKit 2), and fetches **subscription status** from your backend.
 
 > The SDK is **one library** shared across projects. You do **not** hardcode bundle ids per build. Each app uses its own `bundleId` and `apiKey` configured in AdminJS.
 
@@ -66,7 +66,7 @@ await MainActor.run {
 ```
 
 ### Required parameters
-- `baseURL` – our SDK config Cloud Run URL
+- `baseURL` – your SDK service base URL
 - `bundleId` – app bundle id (must match `apps/{bundleId}`)
 - `apiKey` – per-app SDK API key (generated in AdminJS). **Do not hard-code or commit it.**
 - `customerUserId` – AppsFlyer-generated id (passed from app)
