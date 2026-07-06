@@ -9,6 +9,7 @@ Internal Swift/iOS SDK. It fetches **paywalls + products**, supports **purchases
 - [Purchases](#purchases)
 - [Profile / Subscription Status](#profile--subscription-status)
 - [Monthly subscriptions with a 12-month commitment](docs/monthly-commitment-subscriptions.md)
+- [Web payments](docs/web-payments.md)
 
 > The SDK is **one library** shared across projects. You do **not** hardcode bundle ids per build. Each app uses its own `bundleId` and `apiKey` configured in AdminJS.
 
@@ -177,7 +178,7 @@ Server endpoint: `GET /v1/sdk/subscriptionStatus`.
 > Requires that the user is linked to Apple `original_transaction_id`.
 
 SDK method:
-- `getSubscriptionStatus()` → returns `expiresAt`, `isActive`, `currentSubscriptionStatus`, `billingPlanType`, and optional `commitment` details.
+- `getSubscriptionStatus()` → returns `expiresAt`, `isActive`, `source`, `provider`, `currentSubscriptionStatus`, `billingPlanType`, optional `commitment` details, and web payment fields when entitlement comes from Stripe/Solidgate.
 
 **Current backend logic:** `isActive = expires_at > now`, except terminal/problem statuses such as billing retry, refund, or expiration are treated as inactive.
 

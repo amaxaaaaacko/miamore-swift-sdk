@@ -3,6 +3,29 @@ import Foundation
 public enum MiaMoreEnvironment: String, Codable, Sendable {
   case prod = "PROD"
   case sandbox = "SANDBOX"
+  case unknown = "UNKNOWN"
+}
+
+public enum MiaMoreSubscriptionSource: String, Codable, Sendable {
+  case appStore = "app_store"
+  case web = "web"
+  case unknown = "unknown"
+}
+
+public enum MiaMorePaymentProvider: String, Codable, Sendable {
+  case stripe
+  case solidgate
+  case unknown
+
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.singleValueContainer()
+    let raw = try container.decode(String.self).trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    switch raw {
+    case "stripe": self = .stripe
+    case "solidgate": self = .solidgate
+    default: self = .unknown
+    }
+  }
 }
 
 public enum MiaMoreLogLevel: String, Codable, Sendable {
@@ -33,9 +56,21 @@ public struct MiaMoreSubscriptionStatus: Codable, Sendable {
   public let isActive: Bool
   public let expiresAt: Date?
   public let environment: MiaMoreEnvironment
+  /// Present for App Store subscriptions. Empty for web-only subscriptions on older backend responses.
   public let originalTransactionId: String
+  /// Entitlement source selected by backend. `nil` means older backend response.
+  public let source: MiaMoreSubscriptionSource?
+  /// Web payment provider when `source == .web`.
+  public let provider: MiaMorePaymentProvider?
+  public let providerAccountId: String?
+  public let providerChannelId: String?
+  public let providerCustomerId: String?
+  public let providerSubscriptionId: String?
   public let currentSubscriptionStatus: String?
   public let productId: String?
+  public let priceId: String?
+  public let entitlementId: String?
+  public let trialType: String?
   public let billingPlanType: MiaMoreSDK.BillingPlanType?
   public let commitment: Commitment?
   public let updatedAt: Date?
@@ -45,8 +80,17 @@ public struct MiaMoreSubscriptionStatus: Codable, Sendable {
     case expiresAt = "expires_at"
     case environment
     case originalTransactionId = "original_transaction_id"
+    case source
+    case provider
+    case providerAccountId = "provider_account_id"
+    case providerChannelId = "provider_channel_id"
+    case providerCustomerId = "provider_customer_id"
+    case providerSubscriptionId = "provider_subscription_id"
     case currentSubscriptionStatus = "current_subscription_status"
     case productId = "product_id"
+    case priceId = "price_id"
+    case entitlementId = "entitlement_id"
+    case trialType = "trial_type"
     case billingPlanType = "billing_plan_type"
     case commitment
     case updatedAt = "updated_at"
