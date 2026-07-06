@@ -12,16 +12,48 @@ public enum MiaMorePurchaseOutcome: Sendable {
 public enum MiaMorePurchaseError: Error {
   case productNotFound
   case failedVerification
+  /// The requested billing plan requires StoreKit commitment-plan symbols that aren't available in this build.
+  /// Build the SDK with `MIAMORE_ENABLE_STOREKIT_COMMITMENT_PLANS` using Xcode 26.5 SDK or newer.
+  case unsupportedBillingPlanType
 }
 
 extension MiaMoreSDK {
   /// Purchase using StoreKit 2.
   /// - Returns: a simplified outcome (success / pending / cancelled)
   public static func purchase(productId: String) async throws -> MiaMorePurchaseOutcome {
+    try await purchase(productId: productId, billingPlanType: nil)
+  }
+
+  /// Purchase using StoreKit 2, optionally selecting a billing plan for products that expose multiple plans.
+  ///
+  /// For monthly subscriptions with a 12-month commitment, pass `.monthlyCommitment`.
+  /// The default (`nil` / `.upFront`) keeps the existing StoreKit purchase behavior.
+  public static func purchase(productId: String, billingPlanType: BillingPlanType?) async throws -> MiaMorePurchaseOutcome {
     let products = try await Product.products(for: [productId])
     guard let product = products.first else { throw MiaMorePurchaseError.productNotFound }
 
-    let result = try await product.purchase()
+    let result: Product.PurchaseResult
+    switch billingPlanType ?? .upFront {
+    case .upFront:
+      result = try await product.purchase()
+    case .monthlyCommitment:
+      #if MIAMORE_ENABLE_STOREKIT_COMMITMENT_PLANS
+      if #available(iOS 26.4, macOS 26.4, tvOS 26.4, visionOS 26.4, *) {
+        result = try await product.purchase(options: [.billingPlanType(.monthly)])
+      } else {
+        throw MiaMorePurchaseError.unsupportedBillingPlanType
+      }
+      #else
+      throw MiaMorePurchaseError.unsupportedBillingPlanType
+      #endif
+    case .unknown:
+      throw MiaMorePurchaseError.unsupportedBillingPlanType
+    }
+
+    return try await handlePurchaseResult(result)
+  }
+
+  private static func handlePurchaseResult(_ result: Product.PurchaseResult) async throws -> MiaMorePurchaseOutcome {
     switch result {
     case .success(let verification):
       let transaction = try checkVerified(verification)

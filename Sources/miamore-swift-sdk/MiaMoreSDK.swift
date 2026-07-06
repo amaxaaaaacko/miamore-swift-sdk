@@ -2,7 +2,7 @@ import Foundation
 
 @MainActor
 public enum MiaMoreSDK {
-  public static let version = "0.1.3"
+  public static let version = "0.1.4"
 
   public struct Configuration: Sendable {
     public let baseURL: URL
@@ -72,13 +72,46 @@ public enum MiaMoreSDK {
     config
   }
 
+  public enum BillingPlanType: String, Codable, Sendable {
+    /// Standard auto-renewable subscription billing: the customer pays for the whole billing period up front.
+    case upFront = "up_front"
+
+    /// Monthly billing for a yearly commitment plan.
+    case monthlyCommitment = "monthly"
+
+    /// Unknown/future billing plan value returned by backend or Apple.
+    case unknown = "unknown"
+
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.singleValueContainer()
+      let raw = try container.decode(String.self)
+      switch raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+      case "up_front", "upfront", "billed_upfront", "billed-upfront":
+        self = .upFront
+      case "monthly", "monthly_commitment", "monthly-commitment":
+        self = .monthlyCommitment
+      default:
+        self = .unknown
+      }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.singleValueContainer()
+      try container.encode(rawValue)
+    }
+  }
+
   public struct ProductRef: Codable, Sendable {
     public let productId: String
     public let sort: Int?
+    /// Optional billing plan selector for products that expose multiple billing options under the same product id.
+    /// `nil` means the app should use StoreKit's default/up-front billing plan.
+    public let billingPlanType: BillingPlanType?
 
     enum CodingKeys: String, CodingKey {
       case productId = "product_id"
       case sort
+      case billingPlanType = "billing_plan_type"
     }
   }
 

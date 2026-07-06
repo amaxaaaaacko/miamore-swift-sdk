@@ -2,6 +2,14 @@
 
 Internal Swift/iOS SDK. It fetches **paywalls + products**, supports **purchases/restore** (StoreKit 2), and fetches **subscription status** from your backend.
 
+## Documentation
+
+- [Quick start](#installation)
+- [Paywalls / Products](#paywalls--products)
+- [Purchases](#purchases)
+- [Profile / Subscription Status](#profile--subscription-status)
+- [Monthly subscriptions with a 12-month commitment](docs/monthly-commitment-subscriptions.md)
+
 > The SDK is **one library** shared across projects. You do **not** hardcode bundle ids per build. Each app uses its own `bundleId` and `apiKey` configured in AdminJS.
 
 ---
@@ -13,12 +21,12 @@ Internal Swift/iOS SDK. It fetches **paywalls + products**, supports **purchases
 **Xcode:**
 - *File → Add Packages…*
 - URL: `https://github.com/amaxaaaaacko/miamore-swift-sdk`
-- Version: `from 0.1.2`
+- Version: `from 0.1.4`
 
 **Package.swift:**
 
 ```swift
-.package(url: "https://github.com/amaxaaaaacko/miamore-swift-sdk", from: "0.1.3"),
+.package(url: "https://github.com/amaxaaaaacko/miamore-swift-sdk", from: "0.1.4"),
 ```
 
 **Module / target name**
@@ -91,6 +99,7 @@ let paywall = res.paywall
 
 for p in paywall.products {
   print(p.productId)
+  print(p.billingPlanType?.rawValue ?? "default")
 }
 ```
 
@@ -109,15 +118,51 @@ let res = try await MiaMoreSDK.getPaywall(
 The SDK returns `paywall.products` as an ordered list of product identifiers.
 Use StoreKit to fetch `Product` objects.
 
+For a yearly App Store product that has both normal annual billing and monthly billing with a 12-month commitment, AdminJS/backend can return the same `product_id` more than once with different `billing_plan_type` values:
+
+```json
+[
+  { "product_id": "com.example.pro.yearly", "billing_plan_type": "up_front", "sort": 1 },
+  { "product_id": "com.example.pro.yearly", "billing_plan_type": "monthly", "sort": 2 }
+]
+```
+
+Supported billing plan values in the SDK:
+- `.upFront` / JSON `"up_front"` — standard up-front billing
+- `.monthlyCommitment` / JSON `"monthly"` — monthly billing with a 12-month commitment
+
 ---
 
 ## Purchases
 
-Not implemented yet.
-
-Planned API (StoreKit 2):
+StoreKit 2 APIs:
 - `purchase(productId:)`
+- `purchase(productId:billingPlanType:)`
 - `restore()`
+
+Standard purchase:
+
+```swift
+let outcome = try await MiaMoreSDK.purchase(productId: "com.example.pro.yearly")
+```
+
+Monthly billing with a 12-month commitment:
+
+```swift
+let outcome = try await MiaMoreSDK.purchase(
+  productId: "com.example.pro.yearly",
+  billingPlanType: .monthlyCommitment
+)
+```
+
+This uses Apple StoreKit's `Product.PurchaseOption.billingPlanType(.monthly)`.
+Because that symbol requires Xcode 26.5 SDK or newer, the SDK keeps source compatibility with older toolchains. To enable actual commitment-plan purchasing, build the package with the Swift active compilation condition:
+
+```text
+MIAMORE_ENABLE_STOREKIT_COMMITMENT_PLANS
+```
+
+Without that flag, requesting `.monthlyCommitment` throws `MiaMorePurchaseError.unsupportedBillingPlanType`; normal `.upFront` purchases keep working.
 
 ---
 
@@ -131,10 +176,10 @@ Server endpoint: `GET /v1/sdk/subscriptionStatus`.
 
 > Requires that the user is linked to Apple `original_transaction_id`.
 
-Planned SDK method:
-- `getSubscriptionStatus()` → returns `{ expiresAt, isActive }`
+SDK method:
+- `getSubscriptionStatus()` → returns `expiresAt`, `isActive`, `currentSubscriptionStatus`, `billingPlanType`, and optional `commitment` details.
 
-**Current backend logic:** `isActive = expires_at > now`.
+**Current backend logic:** `isActive = expires_at > now`, except terminal/problem statuses such as billing retry, refund, or expiration are treated as inactive.
 
 ### Linking user to Apple original_transaction_id
 
@@ -143,7 +188,7 @@ To resolve subscription status by `customer_user_id`, the backend needs mapping:
 
 Server endpoint: `POST /v1/sdk/link`.
 
-SDK helper method is planned.
+SDK helper method: `link(originalTransactionId:environment:)`.
 
 ---
 
