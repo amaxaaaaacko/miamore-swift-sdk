@@ -1,13 +1,25 @@
 import Foundation
 
 extension MiaMoreSDK {
-  /// Store AppsFlyer id (if you want it separately from customerUserId)
+  /// Store AppsFlyer id (if you want it separately from customerUserId).
   public static func setIntegrationIdentifier(appsflyerId: String) async throws {
-    try await updateAttribution(appsflyerId: appsflyerId, payload: nil)
+    try await updateAttribution(appsflyerId: appsflyerId, firebaseAppInstanceId: nil, payload: nil)
+  }
+
+  /// Store Firebase Analytics App Instance ID for Firebase / Google Analytics server-side events.
+  ///
+  /// Call this once on every app launch after Firebase has been configured and MiaMoreSDK.configure() has run.
+  /// The app should obtain the value from Firebase Analytics, e.g. `Analytics.appInstanceID()`.
+  public static func setIntegrationIdentifier(firebaseAppInstanceId: String) async throws {
+    try await updateAttribution(appsflyerId: nil, firebaseAppInstanceId: firebaseAppInstanceId, payload: nil)
   }
 
   /// Send attribution payload to MiaMore backend.
-  public static func updateAttribution(appsflyerId: String? = nil, payload: MiaMoreAttributionPayload?) async throws {
+  public static func updateAttribution(
+    appsflyerId: String? = nil,
+    firebaseAppInstanceId: String? = nil,
+    payload: MiaMoreAttributionPayload?
+  ) async throws {
     guard let cfg = configuration else { throw SDKError.notConfigured }
 
     let url = try MiaMoreHTTP.buildURL(baseURL: cfg.baseURL, path: "/v1/sdk/attribution", query: [])
@@ -25,6 +37,10 @@ extension MiaMoreSDK {
 
     if let appsflyerId {
       body["appsflyerId"] = appsflyerId
+    }
+
+    if let firebaseAppInstanceId {
+      body["firebaseAppInstanceId"] = firebaseAppInstanceId
     }
 
     if let payload {

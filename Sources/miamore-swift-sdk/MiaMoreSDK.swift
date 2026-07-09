@@ -2,7 +2,7 @@ import Foundation
 
 @MainActor
 public enum MiaMoreSDK {
-  public static let version = "0.1.5"
+  public static let version = "0.1.6"
 
   public struct Configuration: Sendable {
     public let baseURL: URL

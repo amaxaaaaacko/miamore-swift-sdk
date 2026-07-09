@@ -8,6 +8,7 @@ Internal Swift/iOS SDK. It fetches **paywalls + products**, supports **purchases
 - [Paywalls / Products](#paywalls--products)
 - [Purchases](#purchases)
 - [Profile / Subscription Status](#profile--subscription-status)
+- [Firebase / Google Analytics](#firebase--google-analytics)
 - [Monthly subscriptions with a 12-month commitment](docs/monthly-commitment-subscriptions.md)
 - [Web payments](docs/web-payments.md)
 
@@ -195,11 +196,49 @@ SDK helper method: `link(originalTransactionId:environment:)`.
 
 ## Attribution
 
-Not implemented yet.
+Use attribution helpers to send third-party installation identifiers to the backend.
 
-Planned APIs:
+### AppsFlyer
+
+```swift
+try await MiaMoreSDK.setIntegrationIdentifier(appsflyerId: appsFlyerCustomerUserId)
+```
+
+### Firebase / Google Analytics
+
+If the app uses Firebase Analytics, send the Firebase App Instance ID once on every app launch after:
+
+1. `FirebaseApp.configure()`
+2. `MiaMoreSDK.configure(...)`
+
+Do this before any purchase flow, otherwise server-side subscription events cannot be attached to the Firebase installation.
+
+```swift
+import FirebaseCore
+import FirebaseAnalytics
+import miamore_swift_sdk
+
+FirebaseApp.configure()
+
+await MainActor.run {
+  MiaMoreSDK.configure(
+    baseURL: URL(string: "https://<your-sdk-service>")!,
+    bundleId: Bundle.main.bundleIdentifier!,
+    apiKey: "<sdk_api_key>",
+    customerUserId: appsFlyerCustomerUserId
+  )
+}
+
+if let firebaseAppInstanceId = Analytics.appInstanceID() {
+  try await MiaMoreSDK.setIntegrationIdentifier(firebaseAppInstanceId: firebaseAppInstanceId)
+}
+```
+
+The SDK intentionally does not depend on Firebase. The host app owns Firebase setup and passes the resulting App Instance ID into MiaMore.
+
 - `setIntegrationIdentifier(appsflyerId:)`
-- `updateAttribution(_:)`
+- `setIntegrationIdentifier(firebaseAppInstanceId:)`
+- `updateAttribution(appsflyerId:firebaseAppInstanceId:payload:)`
 
 ---
 
