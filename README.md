@@ -23,12 +23,12 @@ Internal Swift/iOS SDK. It fetches **paywalls + products**, supports **purchases
 **Xcode:**
 - *File → Add Packages…*
 - URL: `https://github.com/amaxaaaaacko/miamore-swift-sdk`
-- Version: `from 0.1.4`
+- Version: `from 0.1.6`
 
 **Package.swift:**
 
 ```swift
-.package(url: "https://github.com/amaxaaaaacko/miamore-swift-sdk", from: "0.1.4"),
+.package(url: "https://github.com/amaxaaaaacko/miamore-swift-sdk", from: "0.1.6"),
 ```
 
 **Module / target name**
