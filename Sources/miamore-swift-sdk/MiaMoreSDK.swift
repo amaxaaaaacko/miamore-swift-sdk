@@ -1,14 +1,29 @@
 import Foundation
 
+private let miaMoreAppAccountTokenDefaultsKey = "com.miamore.sdk.appAccountToken"
+
+private func loadOrCreateMiaMoreAppAccountToken() -> UUID {
+  let defaults = UserDefaults.standard
+  if let raw = defaults.string(forKey: miaMoreAppAccountTokenDefaultsKey), let uuid = UUID(uuidString: raw) {
+    return uuid
+  }
+  let uuid = UUID()
+  defaults.set(uuid.uuidString, forKey: miaMoreAppAccountTokenDefaultsKey)
+  return uuid
+}
+
 @MainActor
 public enum MiaMoreSDK {
-  public static let version = "0.1.6"
+  public static let version = "0.1.7"
 
   public struct Configuration: Sendable {
     public let baseURL: URL
     public let bundleId: String
     public let apiKey: String
     public let customerUserId: String
+    /// Stable UUID attached to StoreKit purchases as `appAccountToken`.
+    /// Keep this distinct from AppsFlyer-style customer ids such as `177...-...`.
+    public let appAccountToken: UUID
     public let environment: MiaMoreEnvironment
     public let logLevel: MiaMoreLogLevel
 
@@ -17,6 +32,7 @@ public enum MiaMoreSDK {
       bundleId: String,
       apiKey: String,
       customerUserId: String,
+      appAccountToken: UUID? = nil,
       environment: MiaMoreEnvironment,
       logLevel: MiaMoreLogLevel
     ) {
@@ -24,6 +40,7 @@ public enum MiaMoreSDK {
       self.bundleId = bundleId
       self.apiKey = apiKey
       self.customerUserId = customerUserId
+      self.appAccountToken = appAccountToken ?? loadOrCreateMiaMoreAppAccountToken()
       self.environment = environment
       self.logLevel = logLevel
     }
@@ -45,6 +62,7 @@ public enum MiaMoreSDK {
   ///   - bundleId: Your app bundle id (used as app key in backend), e.g. com.my.app
   ///   - apiKey: Per-app SDK API key (from AdminJS)
   ///   - customerUserId: AppsFlyer-generated user id, passed from app
+  ///   - appAccountToken: Stable UUID attached to StoreKit purchases. If omitted, SDK creates and stores one locally.
   ///   - environment: PROD / SANDBOX (default: PROD)
   ///   - logLevel: debug/info/... (default: info)
   public static func configure(
@@ -52,6 +70,7 @@ public enum MiaMoreSDK {
     bundleId: String,
     apiKey: String,
     customerUserId: String,
+    appAccountToken: UUID? = nil,
     environment: MiaMoreEnvironment = .prod,
     logLevel: MiaMoreLogLevel = .info
   ) {
@@ -60,6 +79,7 @@ public enum MiaMoreSDK {
       bundleId: bundleId,
       apiKey: apiKey,
       customerUserId: customerUserId,
+      appAccountToken: appAccountToken ?? loadOrCreateMiaMoreAppAccountToken(),
       environment: environment,
       logLevel: logLevel
     )

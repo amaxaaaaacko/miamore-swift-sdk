@@ -32,14 +32,16 @@ extension MiaMoreSDK {
     let products = try await Product.products(for: [productId])
     guard let product = products.first else { throw MiaMorePurchaseError.productNotFound }
 
+    guard let cfg = configuration else { throw SDKError.notConfigured }
+
     let result: Product.PurchaseResult
     switch billingPlanType ?? .upFront {
     case .upFront:
-      result = try await product.purchase()
+      result = try await product.purchase(options: [.appAccountToken(cfg.appAccountToken)])
     case .monthlyCommitment:
       #if MIAMORE_ENABLE_STOREKIT_COMMITMENT_PLANS
       if #available(iOS 26.4, macOS 26.4, tvOS 26.4, visionOS 26.4, *) {
-        result = try await product.purchase(options: [.billingPlanType(.monthly)])
+        result = try await product.purchase(options: [.appAccountToken(cfg.appAccountToken), .billingPlanType(.monthly)])
       } else {
         throw MiaMorePurchaseError.unsupportedBillingPlanType
       }

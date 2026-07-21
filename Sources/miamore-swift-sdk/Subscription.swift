@@ -1,5 +1,9 @@
 import Foundation
 
+private struct MiaMoreSubscriptionStatusErrorResponse: Decodable {
+  let error: String?
+}
+
 extension MiaMoreSDK {
   /// Fetch subscription status from MiaMore backend.
   /// Requires that the user has been linked to Apple `original_transaction_id`.
@@ -23,13 +27,38 @@ extension MiaMoreSDK {
     let (data, resp) = try await URLSession.shared.data(for: req)
     guard let http = resp as? HTTPURLResponse else { throw SDKError.invalidResponse }
 
+    let decoder = JSONDecoder()
+    MiaMoreHTTP.decodeISODate(decoder)
+
+    if http.statusCode == 404,
+       let errorResponse = try? JSONDecoder().decode(MiaMoreSubscriptionStatusErrorResponse.self, from: data),
+       errorResponse.error == "not_linked" {
+      return MiaMoreSubscriptionStatus(
+        isActive: false,
+        expiresAt: nil,
+        environment: cfg.environment,
+        originalTransactionId: "",
+        source: nil,
+        provider: nil,
+        providerAccountId: nil,
+        providerChannelId: nil,
+        providerCustomerId: nil,
+        providerSubscriptionId: nil,
+        currentSubscriptionStatus: nil,
+        productId: nil,
+        priceId: nil,
+        entitlementId: nil,
+        trialType: nil,
+        billingPlanType: nil,
+        commitment: nil,
+        updatedAt: nil
+      )
+    }
+
     if http.statusCode >= 300 {
       let body = String(data: data, encoding: .utf8)
       throw SDKError.httpError(status: http.statusCode, body: body)
     }
-
-    let decoder = JSONDecoder()
-    MiaMoreHTTP.decodeISODate(decoder)
 
     return try decoder.decode(MiaMoreSubscriptionStatus.self, from: data)
   }
@@ -54,6 +83,7 @@ extension MiaMoreSDK {
     let body: [String: Any] = [
       "bundleId": cfg.bundleId,
       "customerUserId": cfg.customerUserId,
+      "appAccountToken": cfg.appAccountToken.uuidString,
       "environment": (environment ?? cfg.environment).rawValue,
       "originalTransactionId": originalTransactionId,
     ]
