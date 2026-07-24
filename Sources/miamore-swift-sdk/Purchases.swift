@@ -3,6 +3,9 @@ import Foundation
 #if canImport(StoreKit)
 import StoreKit
 
+@MainActor
+private var miaMoreTransactionUpdatesTask: Task<Void, Never>?
+
 public enum MiaMorePurchaseOutcome: Sendable {
   case success(transactionId: String, originalTransactionId: String, productId: String)
   case pending
@@ -18,6 +21,25 @@ public enum MiaMorePurchaseError: Error {
 }
 
 extension MiaMoreSDK {
+  static func startTransactionUpdatesListenerIfNeeded() {
+    guard miaMoreTransactionUpdatesTask == nil else { return }
+
+    miaMoreTransactionUpdatesTask = Task {
+      for await update in Transaction.updates {
+        guard case .verified(let transaction) = update else { continue }
+
+        do {
+          try await link(originalTransactionId: String(transaction.originalID))
+        } catch {
+          // Best-effort: purchase() / restore() also link when they see the transaction,
+          // and subscriptionStatus can recover after the app calls link later.
+        }
+
+        await transaction.finish()
+      }
+    }
+  }
+
   /// Purchase using StoreKit 2.
   /// - Returns: a simplified outcome (success / pending / cancelled)
   public static func purchase(productId: String) async throws -> MiaMorePurchaseOutcome {

@@ -14,7 +14,7 @@ private func loadOrCreateMiaMoreAppAccountToken() -> UUID {
 
 @MainActor
 public enum MiaMoreSDK {
-  public static let version = "0.1.7"
+  public static let version = "0.1.9"
 
   public struct Configuration: Sendable {
     public let baseURL: URL
@@ -86,6 +86,13 @@ public enum MiaMoreSDK {
 
     // Auto-track basic activity for refund-saver heuristics.
     MiaMoreAppOpenAutoTracker.shared.startIfNeeded()
+
+    // StoreKit recommends listening for Transaction.updates at app launch so
+    // async/deferred successful purchases are not missed. This is safe to start
+    // multiple times; the SDK keeps a single listener task per process.
+    #if canImport(StoreKit)
+    startTransactionUpdatesListenerIfNeeded()
+    #endif
   }
 
   public static var configuration: Configuration? {

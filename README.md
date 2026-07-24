@@ -142,6 +142,8 @@ StoreKit 2 APIs:
 - `purchase(productId:billingPlanType:)`
 - `restore()`
 
+The SDK starts a single StoreKit `Transaction.updates` listener from `configure()` so delayed/asynchronous successful purchases can still be linked and finished. Apps should call `configure()` once at launch before opening paywalls.
+
 Standard purchase:
 
 ```swift
