@@ -39,19 +39,11 @@ Apple currently requires:
 - iOS 26.4, iPadOS 26.4, macOS 26.4, tvOS 26.4, or visionOS 26.4 or newer on device.
 - The feature is not available in the United States and Singapore.
 
-MiaMore Swift SDK keeps compatibility with older Xcode versions. The public API is available, but actual monthly-commitment purchasing is compiled only when this Swift active compilation condition is enabled:
+Starting with MiaMore Swift SDK `v0.1.8`, the package manifest defines `MIAMORE_ENABLE_STOREKIT_COMMITMENT_PLANS` automatically when the installed Apple SDK exposes StoreKit's billing-plan purchase option. Apps no longer need to add that active compilation condition in their own target, which would not affect the Swift Package target anyway.
 
-```text
-MIAMORE_ENABLE_STOREKIT_COMMITMENT_PLANS
-```
+On older Apple SDKs, the package keeps compiling without the commitment purchase path; in that case calling `.monthlyCommitment` still throws `MiaMorePurchaseError.unsupportedBillingPlanType`. Existing apps pinned to older SDK tags are not affected by `v0.1.8`.
 
-Without that flag, calling `.monthlyCommitment` throws:
-
-```swift
-MiaMorePurchaseError.unsupportedBillingPlanType
-```
-
-Normal up-front purchases continue to work without the flag.
+Normal up-front purchases keep the existing StoreKit purchase behavior.
 
 ---
 

@@ -12,8 +12,8 @@ public enum MiaMorePurchaseOutcome: Sendable {
 public enum MiaMorePurchaseError: Error {
   case productNotFound
   case failedVerification
-  /// The requested billing plan requires StoreKit commitment-plan symbols that aren't available in this build.
-  /// Build the SDK with `MIAMORE_ENABLE_STOREKIT_COMMITMENT_PLANS` using Xcode 26.5 SDK or newer.
+  /// The requested billing plan requires StoreKit commitment-plan symbols/runtime support.
+  /// SDK v0.1.8+ enables those symbols in the package target; use Xcode 26.5 SDK or newer.
   case unsupportedBillingPlanType
 }
 

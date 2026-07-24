@@ -158,13 +158,11 @@ let outcome = try await MiaMoreSDK.purchase(
 ```
 
 This uses Apple StoreKit's `Product.PurchaseOption.billingPlanType(.monthly)`.
-Because that symbol requires Xcode 26.5 SDK or newer, the SDK keeps source compatibility with older toolchains. To enable actual commitment-plan purchasing, build the package with the Swift active compilation condition:
+Starting with SDK `v0.1.8`, the package manifest enables `MIAMORE_ENABLE_STOREKIT_COMMITMENT_PLANS` automatically when the installed Apple SDK exposes StoreKit's billing-plan purchase option. Apps do not need to add that active compilation condition manually; app-target flags do not affect Swift Package targets.
 
-```text
-MIAMORE_ENABLE_STOREKIT_COMMITMENT_PLANS
-```
+Because the StoreKit billing-plan symbol requires Xcode 26.5 SDK or newer, older Apple SDKs keep compiling the package without the commitment purchase path; in that case requesting `.monthlyCommitment` still throws `MiaMorePurchaseError.unsupportedBillingPlanType`. Existing apps pinned to older SDK tags are not affected by this release.
 
-Without that flag, requesting `.monthlyCommitment` throws `MiaMorePurchaseError.unsupportedBillingPlanType`; normal `.upFront` purchases keep working.
+Normal `.upFront` purchases keep the existing StoreKit purchase behavior.
 
 ---
 
