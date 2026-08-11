@@ -14,7 +14,7 @@ private func loadOrCreateMiaMoreAppAccountToken() -> UUID {
 
 @MainActor
 public enum MiaMoreSDK {
-  public static let version = "0.1.9"
+  public static let version = "0.1.10"
 
   public struct Configuration: Sendable {
     public let baseURL: URL
@@ -182,6 +182,38 @@ public enum MiaMoreSDK {
     }
   }
 
+  public struct VariantAssignment: Codable, Sendable {
+    public let experimentId: String
+    public let variantAbTestId: String
+    public let variantId: String
+    public let bucket: Int
+    public let totalWeight: Double?
+
+    enum CodingKeys: String, CodingKey {
+      case experimentId = "experiment_id"
+      case variantAbTestId = "variant_ab_test_id"
+      case variantId = "variant_id"
+      case bucket
+      case totalWeight = "total_weight"
+    }
+  }
+
+  public struct VariantResponse: Codable, Sendable {
+    public let appBundleId: String
+    public let customerUserId: String
+    public let variantAbTestId: String
+    public let assignment: VariantAssignment
+    public let variantId: String
+
+    enum CodingKeys: String, CodingKey {
+      case appBundleId = "app_bundle_id"
+      case customerUserId = "customer_user_id"
+      case variantAbTestId = "variant_ab_test_id"
+      case assignment
+      case variantId = "variant_id"
+    }
+  }
+
   /// Fetch paywall for given placement (recommended).
   public static func getPaywall(placement: String) async throws -> PaywallResponse {
     try await getPaywall(placement: placement, paywallId: nil, experimentId: nil)
@@ -221,5 +253,36 @@ public enum MiaMoreSDK {
 
     let decoder = JSONDecoder()
     return try decoder.decode(PaywallResponse.self, from: data)
+  }
+
+  /// Fetch a deterministic custom string variant for a Variant A/B Test.
+  public static func getVariant(_ variantTestId: String) async throws -> VariantResponse {
+    guard let cfg = configuration else { throw SDKError.notConfigured }
+
+    let url = try MiaMoreHTTP.buildURL(
+      baseURL: cfg.baseURL,
+      path: "/v1/sdk/variant",
+      query: [
+        URLQueryItem(name: "bundleId", value: cfg.bundleId),
+        URLQueryItem(name: "customerUserId", value: cfg.customerUserId),
+        URLQueryItem(name: "variantTestId", value: variantTestId),
+      ]
+    )
+
+    var req = URLRequest(url: url)
+    req.httpMethod = "GET"
+    req.setValue("Bearer \(cfg.apiKey)", forHTTPHeaderField: "Authorization")
+    req.setValue("application/json", forHTTPHeaderField: "Accept")
+
+    let (data, resp) = try await URLSession.shared.data(for: req)
+    guard let http = resp as? HTTPURLResponse else { throw SDKError.invalidResponse }
+
+    if http.statusCode >= 300 {
+      let body = String(data: data, encoding: .utf8)
+      throw SDKError.httpError(status: http.statusCode, body: body)
+    }
+
+    let decoder = JSONDecoder()
+    return try decoder.decode(VariantResponse.self, from: data)
   }
 }
