@@ -9,6 +9,8 @@ public enum MiaMoreEnvironment: String, Codable, Sendable {
 public enum MiaMoreSubscriptionSource: String, Codable, Sendable {
   case appStore = "app_store"
   case web = "web"
+  /// A Google Play entitlement, linked via the Android SDK's own `link()` call.
+  case android = "android"
   case unknown = "unknown"
 }
 
