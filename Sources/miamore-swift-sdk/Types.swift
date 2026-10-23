@@ -17,6 +17,7 @@ public enum MiaMoreSubscriptionSource: String, Codable, Sendable {
 public enum MiaMorePaymentProvider: String, Codable, Sendable {
   case stripe
   case solidgate
+  case paddle
   case unknown
 
   public init(from decoder: Decoder) throws {
@@ -25,6 +26,7 @@ public enum MiaMorePaymentProvider: String, Codable, Sendable {
     switch raw {
     case "stripe": self = .stripe
     case "solidgate": self = .solidgate
+    case "paddle": self = .paddle
     default: self = .unknown
     }
   }
@@ -76,6 +78,9 @@ public struct MiaMoreSubscriptionStatus: Codable, Sendable {
   public let billingPlanType: MiaMoreSDK.BillingPlanType?
   public let commitment: Commitment?
   public let updatedAt: Date?
+  /// Payer email: from the web purchase (Stripe/Solidgate/Paddle), else the email the user restored a purchase with.
+  /// `nil` when unknown or on older backend responses.
+  public let customerEmail: String?
 
   enum CodingKeys: String, CodingKey {
     case isActive = "is_active"
@@ -96,6 +101,7 @@ public struct MiaMoreSubscriptionStatus: Codable, Sendable {
     case billingPlanType = "billing_plan_type"
     case commitment
     case updatedAt = "updated_at"
+    case customerEmail = "customer_email"
   }
 }
 

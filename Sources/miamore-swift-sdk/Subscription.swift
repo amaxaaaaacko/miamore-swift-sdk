@@ -51,7 +51,8 @@ extension MiaMoreSDK {
         trialType: nil,
         billingPlanType: nil,
         commitment: nil,
-        updatedAt: nil
+        updatedAt: nil,
+        customerEmail: nil
       )
     }
 

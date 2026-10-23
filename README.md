@@ -179,7 +179,7 @@ Server endpoint: `GET /v1/sdk/subscriptionStatus`.
 > Requires that the user is linked to Apple `original_transaction_id`.
 
 SDK method:
-- `getSubscriptionStatus()` → returns `expiresAt`, `isActive`, `source`, `provider`, `currentSubscriptionStatus`, `billingPlanType`, optional `commitment` details, and web payment fields when entitlement comes from Stripe/Solidgate.
+- `getSubscriptionStatus()` → returns `expiresAt`, `isActive`, `source`, `provider`, `currentSubscriptionStatus`, `billingPlanType`, optional `commitment` details, web payment fields when entitlement comes from Stripe/Solidgate/Paddle, and `customerEmail` (the payer email, or the email the user restored a purchase with; `nil` when unknown).
 
 **Current backend logic:** `isActive = expires_at > now`, except terminal/problem statuses such as billing retry, refund, or expiration are treated as inactive.
 
