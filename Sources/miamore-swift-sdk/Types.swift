@@ -105,6 +105,14 @@ public struct MiaMoreSubscriptionStatus: Codable, Sendable {
   }
 }
 
+/// Result of `MiaMoreSDK.claimWebPurchase(email:)`.
+public struct MiaMoreWebClaimResult: Sendable {
+  /// Whether any web purchase with this email exists for the app (active or not).
+  public let found: Bool
+  /// Subscription status fetched right after the claim. Unlock from `status.isActive`.
+  public let status: MiaMoreSubscriptionStatus
+}
+
 public struct MiaMoreAttributionPayload: @unchecked Sendable {
   public let raw: [String: Any]
 

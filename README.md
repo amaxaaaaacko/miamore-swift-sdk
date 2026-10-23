@@ -192,6 +192,24 @@ Server endpoint: `POST /v1/sdk/link`.
 
 SDK helper method: `link(originalTransactionId:environment:)`.
 
+### Restoring a web purchase by email
+
+A web-funnel buyer normally unlocks through the deep link that carries the provider customer id (`ctm_…`, `cus_…`)
+used as `customerUserId`. If the deep link is lost (reinstall, another device), ask for the email they paid with:
+
+```swift
+let result = try await MiaMoreSDK.claimWebPurchase(email: email)
+if result.status.isActive {
+  // unlock premium
+} else if !result.found {
+  // "No purchase found for this email"
+}
+```
+
+Server endpoint: `POST /v1/sdk/webClaim`. The email is saved on the profile even when nothing matches yet, so a purchase
+whose webhook arrives later unlocks on the next `getSubscriptionStatus()`. It is not verified by design (one email may
+be used on several devices). A malformed email throws `SDKError.httpError(status: 400, body: …invalid_email…)`.
+
 ---
 
 ## Attribution

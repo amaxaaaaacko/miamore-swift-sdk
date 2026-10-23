@@ -4,6 +4,10 @@ private struct MiaMoreSubscriptionStatusErrorResponse: Decodable {
   let error: String?
 }
 
+private struct MiaMoreWebClaimResponse: Decodable {
+  let found: Bool?
+}
+
 extension MiaMoreSDK {
   /// Fetch subscription status from MiaMore backend.
   /// Requires that the user has been linked to Apple `original_transaction_id`.
@@ -98,5 +102,48 @@ extension MiaMoreSDK {
       let bodyStr = String(data: data, encoding: .utf8)
       throw SDKError.httpError(status: http.statusCode, body: bodyStr)
     }
+  }
+
+  /// Restore a web purchase by the payer's email (lost deep link, reinstall, another device).
+  ///
+  /// The email is saved on this `customerUserId`'s profile even if nothing matches yet, so a web purchase whose
+  /// webhook arrives later still unlocks on the next `getSubscriptionStatus()`. The email is not verified by design.
+  /// Throws `SDKError.httpError(status: 400, ...)` with `invalid_email` for a malformed email.
+  ///
+  /// - Returns: whether any web purchase with this email was found, and the refreshed subscription status.
+  public static func claimWebPurchase(email: String) async throws -> MiaMoreWebClaimResult {
+    guard let cfg = configuration else { throw SDKError.notConfigured }
+
+    let url = try MiaMoreHTTP.buildURL(
+      baseURL: cfg.baseURL,
+      path: "/v1/sdk/webClaim",
+      query: []
+    )
+
+    var req = URLRequest(url: url)
+    req.httpMethod = "POST"
+    req.setValue("Bearer \(cfg.apiKey)", forHTTPHeaderField: "Authorization")
+    req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    req.setValue("application/json", forHTTPHeaderField: "Accept")
+
+    let body: [String: Any] = [
+      "bundleId": cfg.bundleId,
+      "customerUserId": cfg.customerUserId,
+      "email": email,
+    ]
+
+    req.httpBody = try JSONSerialization.data(withJSONObject: body, options: [])
+
+    let (data, resp) = try await URLSession.shared.data(for: req)
+    guard let http = resp as? HTTPURLResponse else { throw SDKError.invalidResponse }
+
+    if http.statusCode >= 300 {
+      let bodyStr = String(data: data, encoding: .utf8)
+      throw SDKError.httpError(status: http.statusCode, body: bodyStr)
+    }
+
+    let claim = try JSONDecoder().decode(MiaMoreWebClaimResponse.self, from: data)
+    let status = try await getSubscriptionStatus()
+    return MiaMoreWebClaimResult(found: claim.found ?? false, status: status)
   }
 }
