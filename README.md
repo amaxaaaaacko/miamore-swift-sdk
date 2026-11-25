@@ -144,6 +144,8 @@ StoreKit 2 APIs:
 
 The SDK starts a single StoreKit `Transaction.updates` listener from `configure()` so delayed/asynchronous successful purchases can still be linked and finished. Apps should call `configure()` once at launch before opening paywalls.
 
+A transaction is finished only after it has been linked. If linking fails for a reason a retry can fix (offline, timeout, 5xx), the SDK leaves the transaction unfinished and links it again on the next `configure()`; `purchase()` still returns `.success`.
+
 Standard purchase:
 
 ```swift
