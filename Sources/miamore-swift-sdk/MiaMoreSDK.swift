@@ -14,7 +14,7 @@ private func loadOrCreateMiaMoreAppAccountToken() -> UUID {
 
 @MainActor
 public enum MiaMoreSDK {
-  public static let version = "0.1.11"
+  public static let version = "0.1.14"
 
   public struct Configuration: Sendable {
     public let baseURL: URL

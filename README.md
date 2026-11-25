@@ -23,12 +23,12 @@ Internal Swift/iOS SDK. It fetches **paywalls + products**, supports **purchases
 **Xcode:**
 - *File → Add Packages…*
 - URL: `https://github.com/amaxaaaaacko/miamore-swift-sdk`
-- Version: `from 0.1.7`
+- Version: `from 0.1.13`
 
 **Package.swift:**
 
 ```swift
-.package(url: "https://github.com/amaxaaaaacko/miamore-swift-sdk", from: "0.1.7"),
+.package(url: "https://github.com/amaxaaaaacko/miamore-swift-sdk", from: "0.1.13"),
 ```
 
 **Module / target name**
@@ -322,3 +322,13 @@ If the app includes Adapty:
 try await MiaMoreAdaptyBridge.identify(customerUserId: appsFlyerCustomerUserId)
 #endif
 ```
+
+---
+
+## Releasing
+
+Apps pin the SDK by git tag, so each release must keep three places in sync:
+
+1. `MiaMoreSDK.version` in `Sources/miamore-swift-sdk/MiaMoreSDK.swift` — the version being released (e.g. `0.1.14`).
+2. The install snippet in [Installation](#installation) — the lowest version that has every API this README documents.
+3. The git tag `v<version>` on the release commit in `main`.
