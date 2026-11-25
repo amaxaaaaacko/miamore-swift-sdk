@@ -21,22 +21,32 @@ public enum MiaMorePurchaseError: Error {
 }
 
 extension MiaMoreSDK {
+  /// Starts, once per process, the `Transaction.updates` listener and a pass over `Transaction.unfinished`.
+  ///
+  /// The unfinished pass retries transactions whose link failed earlier (see `linkThenFinish`). The listener is
+  /// started first so no update is missed while that pass runs; a transaction seen by both is linked twice,
+  /// which the backend already tolerates (`restore()` re-links every entitlement).
   static func startTransactionUpdatesListenerIfNeeded() {
     guard miaMoreTransactionUpdatesTask == nil else { return }
 
     miaMoreTransactionUpdatesTask = Task {
       for await update in Transaction.updates {
-        guard case .verified(let transaction) = update else { continue }
-
-        do {
-          try await link(originalTransactionId: String(transaction.originalID))
-        } catch {
-          // Best-effort: purchase() / restore() also link when they see the transaction,
-          // and subscriptionStatus can recover after the app calls link later.
-        }
-
-        await transaction.finish()
+        await linkThenFinishIfVerified(update)
       }
+    }
+
+    Task {
+      for await unfinished in Transaction.unfinished {
+        await linkThenFinishIfVerified(unfinished)
+      }
+    }
+  }
+
+  /// Unverified transactions are left untouched, as before.
+  private static func linkThenFinishIfVerified(_ result: VerificationResult<Transaction>) async {
+    guard case .verified(let transaction) = result else { return }
+    await linkThenFinish(originalTransactionId: String(transaction.originalID)) {
+      await transaction.finish()
     }
   }
 
@@ -81,13 +91,9 @@ extension MiaMoreSDK {
     switch result {
     case .success(let verification):
       let transaction = try checkVerified(verification)
-      await transaction.finish()
-
-      // Optional: auto-link (best-effort)
-      do {
-        try await link(originalTransactionId: String(transaction.originalID))
-      } catch {
-        // swallow: app can call link manually
+      // The purchase succeeded either way; a failed link is retried on the next launch.
+      await linkThenFinish(originalTransactionId: String(transaction.originalID)) {
+        await transaction.finish()
       }
 
       return .success(

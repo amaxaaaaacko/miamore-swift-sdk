@@ -25,6 +25,8 @@ final class StubURLProtocol: URLProtocol, @unchecked Sendable {
 
   static let host = "stub.miamore.test"
   static let appOpenPath = "/v1/sdk/appOpen"
+  /// A canned status that fails the request with `URLError(.notConnectedToInternet)` instead of answering.
+  static let offlineStatus = -1
 
   private static let lock = NSLock()
   nonisolated(unsafe) private static var cannedResponses: [String: CannedResponse] = [:]
@@ -68,6 +70,10 @@ final class StubURLProtocol: URLProtocol, @unchecked Sendable {
       return Self.cannedResponses[url.path]
     }
     let (status, json) = canned ?? (404, "{}")
+    guard status != Self.offlineStatus else {
+      client?.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet))
+      return
+    }
 
     let headers = ["Content-Type": "application/json"]
     guard let response = HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: headers) else {
